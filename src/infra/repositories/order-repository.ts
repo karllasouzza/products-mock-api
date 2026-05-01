@@ -10,18 +10,22 @@ export class OrderRepository {
   constructor(private instance = db) {}
 
   async createOrder({
+    id,
     productId,
     quantity,
-  }: Pick<Order, "productId" | "quantity">) {
-    const newOrder = await this.instance("Orders").insert({
-      productId,
-      quantity,
-    });
+  }: Pick<Order, "id" | "productId" | "quantity">) {
+    const newOrder = await this.instance("orders")
+      .insert({
+        id,
+        productId,
+        quantity,
+      })
+      .returning("*");
     return newOrder;
   }
 
   async getOrderById(id: string) {
-    const order = await this.instance("Orders").where({ id }).first();
+    const order = await this.instance("orders").where({ id }).first();
     return order;
   }
 }
