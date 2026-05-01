@@ -105,7 +105,7 @@ Ambas considero essencial.
 
 ---
 
-## O que eu faria diferente / melhoraria com mais tempo
+## O que eu melhoraria com mais tempo
 
 - A primeira coisa seria adicionar Migrations & seeds via Knex (usar `knex migrate:make` / `knex seed:run`) em vez de scripts (que utilizei para ser mais simples).
 - Substituir SQLite por algum banco de dados real como Postgres.
