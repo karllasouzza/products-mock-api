@@ -1,6 +1,10 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import z from "zod";
-import { ProductRepository } from "../infra/repositories/products-repository";
+import {
+  Product,
+  ProductRepository,
+} from "../infra/repositories/products-repository";
+import Decimal from "decimal.js";
 
 const getProductByIdSchema = z.object({
   id: z.string().uuid(),
@@ -11,11 +15,22 @@ type GetProductByIdParams = z.infer<typeof getProductByIdSchema>;
 export class ProductsController {
   constructor(private repository = new ProductRepository()) {}
 
+  private createProductDTO(product: Product) {
+    const price = new Decimal(product.price).toNumber();
+    return {
+      id: product.id,
+      name: product.name,
+      price,
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+    };
+  }
+
   async getAllProducts(_: FastifyRequest, reply: FastifyReply) {
     try {
       const products = await this.repository.getAllProducts();
 
-      return reply.status(200).send(products);
+      return reply.status(200).send(products.map(this.createProductDTO));
     } catch (error) {
       console.log("Error fetching products:", error);
       return reply.status(500).send({ error: "Internal server error" });
@@ -39,7 +54,7 @@ export class ProductsController {
         return;
       }
 
-      return reply.status(200).send(product);
+      return reply.status(200).send(this.createProductDTO(product));
     } catch (error) {
       return reply.status(400).send({ error: "Invalid product ID" });
     }
