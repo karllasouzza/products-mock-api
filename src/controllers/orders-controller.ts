@@ -1,7 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import z from "zod";
-import { OrderRepository } from "../infra/repositories/order-repository";
+import { OrderRepository, Order } from "../infra/repositories/order-repository";
+import { ProductRepository } from "../infra/repositories/products-repository";
+import Decimal from "decimal.js";
 
 const getOrderByIdSchema = z.object({
   id: z.string().uuid(),
@@ -9,13 +11,54 @@ const getOrderByIdSchema = z.object({
 type GetOrderByIdParams = z.infer<typeof getOrderByIdSchema>;
 
 const createOrderSchema = z.object({
-  productId: z.string().uuid(),
-  quantity: z.number(),
+  products: z.array(
+    z.object({
+      productId: z.string().uuid(),
+      quantity: z.number().int().positive(),
+    }),
+  ),
 });
 type CreateOrderBody = z.infer<typeof createOrderSchema>;
 
 export class OrdersController {
-  constructor(private repository = new OrderRepository()) {}
+  constructor(
+    private repository = new OrderRepository(),
+    private productRepository = new ProductRepository(),
+  ) {}
+
+  private async _createOrderDTO(order: Order) {
+    const items = await this.productRepository.getManyProductsByIds(
+      order.products.map((p) => p.productId),
+    );
+
+    const itemsWithSubtotal = items.map((item) => {
+      const orderItem = order.products.find((p) => p.productId === item.id);
+      const quantity = orderItem
+        ? new Decimal(orderItem.quantity)
+        : new Decimal(0);
+      const subtotal = item.price.mul(quantity).toNumber();
+      return {
+        ...item,
+        quantity: quantity.toNumber(),
+        subtotal,
+      };
+    });
+
+    const total = itemsWithSubtotal
+      .reduce((sum, it) => {
+        return sum.plus(it.subtotal ?? new Decimal(0));
+      }, new Decimal(0))
+      .toNumber();
+
+    return {
+      id: order.id,
+      status: order.status,
+      items: itemsWithSubtotal,
+      total,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    };
+  }
 
   async getOrderById(request: FastifyRequest, reply: FastifyReply) {
     const { id } = request.params as GetOrderByIdParams;
@@ -32,19 +75,28 @@ export class OrdersController {
       return;
     }
 
-    return reply.status(200).send(order);
+    return reply.status(200).send(await this._createOrderDTO(order));
   }
 
   async createOrder(request: FastifyRequest, reply: FastifyReply) {
     try {
       createOrderSchema.parse(request.body);
 
-      const { productId, quantity } = request.body as CreateOrderBody;
+      const { products } = request.body as CreateOrderBody;
 
-      const newOrderObject = {
+      const productIds = products.map((p) => p.productId);
+      const existingProducts =
+        await this.productRepository.getManyProductsByIds(productIds);
+
+      if (existingProducts.length !== productIds.length) {
+        reply.status(400).send({ error: "One or more products not found" });
+        return;
+      }
+
+      const newOrderObject: Pick<Order, "id" | "products" | "status"> = {
         id: crypto.randomUUID(),
-        productId,
-        quantity,
+        products,
+        status: "pending",
       };
 
       const newOrder = await this.repository.createOrder(newOrderObject);
@@ -52,7 +104,9 @@ export class OrdersController {
         reply.status(500).send({ error: "Failed to create order" });
         return;
       }
-      return newOrder;
+
+      reply.status(201).send(await this._createOrderDTO(newOrder));
+      return;
     } catch (error) {
       console.log("Error creating order:", error);
       reply.status(400).send({ error: "Invalid request body" });

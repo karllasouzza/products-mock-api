@@ -2,8 +2,10 @@ import { db } from "../knex/database";
 
 export interface Order {
   id: string;
-  productId: string;
-  quantity: number;
+  products: { productId: string; quantity: number }[];
+  status: "pending" | "completed" | "cancelled";
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export class OrderRepository {
@@ -11,21 +13,43 @@ export class OrderRepository {
 
   async createOrder({
     id,
-    productId,
-    quantity,
-  }: Pick<Order, "id" | "productId" | "quantity">) {
-    const newOrder = await this.instance("orders")
-      .insert({
-        id,
-        productId,
-        quantity,
-      })
-      .returning("*");
-    return newOrder;
+    products,
+    status,
+  }: Pick<Order, "id" | "products" | "status">) {
+    await this.instance("orders").insert({
+      id,
+      products: JSON.stringify(products),
+      status,
+    });
+
+    const row = await this.instance("orders").where({ id }).first();
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      products:
+        typeof row.products === "string"
+          ? JSON.parse(row.products)
+          : row.products,
+      status: row.status,
+      createdAt: row.created_at ? new Date(row.created_at) : undefined,
+      updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
+    } as Order;
   }
 
   async getOrderById(id: string) {
-    const order = await this.instance("orders").where({ id }).first();
-    return order;
+    const row = await this.instance("orders").where({ id }).first();
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      products:
+        typeof row.products === "string"
+          ? JSON.parse(row.products)
+          : row.products,
+      status: row.status,
+      createdAt: row.created_at ? new Date(row.created_at) : undefined,
+      updatedAt: row.updated_at ? new Date(row.updated_at) : undefined,
+    } as Order;
   }
 }
