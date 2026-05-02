@@ -39,6 +39,7 @@ export class OrdersController {
       const subtotal = item.price.mul(quantity).toNumber();
       return {
         ...item,
+        price: item.price.toNumber(),
         quantity: quantity.toNumber(),
         subtotal,
       };
