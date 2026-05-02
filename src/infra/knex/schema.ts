@@ -30,14 +30,9 @@ async function createSchema() {
 
     await db.schema.createTable("orders", (table) => {
       table.uuid("id").primary().notNullable();
-      table
-        .uuid("productId")
-        .notNullable()
-        .references("id")
-        .inTable("products")
-        .onDelete("CASCADE");
-      table.integer("quantity").unsigned().notNullable();
-      table.timestamps(true, true); // created_at and updated_at columns
+      table.json("products").notNullable();
+      table.string("status", 20).notNullable().defaultTo("pending");
+      table.timestamps(true, true);
     });
 
     console.log("Orders table created successfully!");
