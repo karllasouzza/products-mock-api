@@ -36,13 +36,13 @@ npm install
 
 ```bash
 # Com Yarn
-yarn mock
+yarn setup
 
 # Com npm
-npm run mock
+npm run setup
 ```
 
-O comando `mock` executa `src/infra/knex/schema.ts` e `src/infra/knex/mocks/products.ts` e gera o arquivo de banco em `src/infra/knex/db.sqlite`.
+O comando `setup` executa `src/infra/knex/schema.ts` e `src/infra/knex/mocks/products.ts` e gera o arquivo de banco em `src/infra/knex/db.sqlite`.
 
 4. Rodar em modo desenvolvimento:
 

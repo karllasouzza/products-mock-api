@@ -63,14 +63,14 @@ const PRODUCTS_MOCK = [
     imageUrl:
       "https://pplx-res.cloudinary.com/image/upload/pplx_search_images/885939b49e839d6d0fa9d6fb3da82996da248aa7.jpg",
     price: "39.90",
-    stock: 45,
+    stock: 0,
   },
   {
     name: "Short Jeans com Franjas",
     imageUrl:
       "https://pplx-res.cloudinary.com/image/upload/pplx_search_images/7c35f31f1cbd0ae2c81c043e9459f0a02cff89cd.jpg",
     price: "159.90",
-    stock: 20,
+    stock: 0,
   },
 ];
 

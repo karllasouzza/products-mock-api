@@ -81,6 +81,7 @@ export class OrdersController {
 
   async createOrder(request: FastifyRequest, reply: FastifyReply) {
     try {
+      console.log(request.body)
       createOrderSchema.parse(request.body);
 
       const { products } = request.body as CreateOrderBody;
